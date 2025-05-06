@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>违规关键词检测工具</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC&family=Noto+Sans+Bulgarian&display=swap');
+
+    body {
+      font-family: 'Noto Sans Bulgarian', sans-serif;
+      padding: 40px;
+      background: url('https://i.imgur.com/bXfPLuM.jpg') no-repeat center center fixed;
+      background-size: cover;
+    }
+    h1 { text-align: center; background-color: rgba(255,255,255,0.7); padding: 10px; border-radius: 8px; }
+    .container { display: flex; gap: 20px; max-width: 1000px; margin: auto; }
+    textarea {
+      width: 100%;
+      height: 300px;
+      font-size: 16px;
+      padding: 10px;
+      font-family: 'Noto Sans Bulgarian', sans-serif;
+    }
+    #inputBox { flex: 1; }
+    #outputBox {
+      flex: 1;
+      background-color: rgba(255, 255, 255, 0.85);
+      border: 1px solid #ccc;
+      padding: 10px;
+      font-family: 'Noto Sans Bulgarian', sans-serif;
+    }
+    .controls { text-align: center; margin-top: 20px; }
+    button { padding: 10px 30px; font-size: 16px; cursor: pointer; }
+    #loading { color: green; font-size: 14px; text-align: center; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>违规关键词检测工具</h1>
+
+  <div class="container">
+    <div id="inputBox">
+      <h3>输入文案：</h3>
+      <textarea id="textInput" placeholder="请输入文案..."></textarea>
+    </div>
+    <div id="outputBox">
+      <h3>检测结果：</h3>
+      <div id="result">正在加载关键词...</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button onclick="checkForKeywords()" id="checkBtn" disabled>确认检测</button>
+    <div id="loading">正在从表格加载关键词...</div>
+  </div>
+
+  <script>
+    const SHEET_ID = '1bC3Sh-gfViZUJtuIURrcAIJQ_P6bT5_0vdspOIYaKUM';
+    const API_KEY = 'AIzaSyCO0edSQXijL9Jw0GIdxJu9FB2CGW8TSSk9';
+    const RANGE = 'keywords!A:A';
+    let keywords = [];
+
+    async function fetchKeywords() {
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`;
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+        if (data.values && data.values.length > 0) {
+          keywords = data.values.flat().map(w => w.trim()).filter(w => w);
+          document.getElementById('loading').innerText = `已加载关键词 ${keywords.length} 个`;
+          document.getElementById('checkBtn').disabled = false;
+          document.getElementById('result').innerText = '等待检测...';
+        } else {
+          document.getElementById('loading').innerText = '未获取到关键词';
+        }
+      } catch (error) {
+        document.getElementById('loading').innerText = '关键词加载失败';
+        console.error(error);
+      }
+    }
+
+    function checkForKeywords() {
+      const inputText = document.getElementById("textInput").value;
+      let foundKeywords = [];
+      keywords.forEach(word => {
+        if (word && inputText.includes(word)) {
+          foundKeywords.push(word);
+        }
+      });
+
+      const resultBox = document.getElementById("result");
+      if (foundKeywords.length > 0) {
+        resultBox.innerHTML = `<strong>发现以下违规词：</strong><br>${foundKeywords.join(', ')}`;
+      } else {
+        resultBox.innerHTML = "文案无任何违规词";
+      }
+    }
+
+    fetchKeywords();
+  </script>
+</body>
+</html>
